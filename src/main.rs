@@ -1,6 +1,7 @@
 
 use std::io;
 use std::io::Write;
+use std::error::Error;
 use std::time::Duration;
 use std::collections::VecDeque;
 
@@ -24,42 +25,47 @@ use crossterm::terminal::disable_raw_mode;
 
 
 fn main() {
+    let _ = standard_snake();
+}
+
+
+fn standard_snake() -> Result<(), Box<dyn Error>> {
             // SETUP //
     let mut out = io::stdout();
-    let (w, h) = terminal::size().unwrap();
+    let (w, h) = terminal::size()?;
     let (c_x, c_y) = (w as i16/ 2, h as i16 / 2);
     let mut v: (i16, i16) = (1, 0);
     let mut apple = (random_range(1..w -1 ), random_range(1..h - 1));
     let mut sym = '>';
     let mut delay = 200;
 
-    enable_raw_mode().unwrap();
-    execute!(out, EnterAlternateScreen).unwrap();
-    execute!(out, cursor::Hide).unwrap();
+    enable_raw_mode()?;
+    execute!(out, EnterAlternateScreen)?;
+    execute!(out, cursor::Hide)?;
 
         // WALLS //
     for x in 0..w {
-        queue!(out, MoveTo(x, 0), Print('+'), MoveTo(x, h - 1), Print('+')).unwrap();
+        queue!(out, MoveTo(x, 0), Print('+'), MoveTo(x, h - 1), Print('+'))?;
     }
     for y in 0..h {
-        queue!(out, MoveTo(0, y), Print('+'), MoveTo(w - 1, y), Print('+')).unwrap();
+        queue!(out, MoveTo(0, y), Print('+'), MoveTo(w - 1, y), Print('+'))?;
     }
-    out.flush().unwrap();
+    out.flush()?;
 
         // INIT SNAKE //
     let mut deque: VecDeque<(i16, i16)> = VecDeque::new();
     for d in 0..3 {
         deque.push_back((c_x + d, c_y));
-        execute!(out, MoveTo((c_x + d) as u16, c_y as u16), Print('#')).unwrap();
+        execute!(out, MoveTo((c_x + d) as u16, c_y as u16), Print('#'))?;
     }
 
         // APPLE //
-    execute!(out, MoveTo(apple.0, apple.1), Print('O')).unwrap();
+    execute!(out, MoveTo(apple.0, apple.1), Print('O'))?;
 
     loop {
                 // CONTROLS //
-        if poll(Duration::from_millis(delay)).unwrap()
-                && let Event::Key(event) = read().unwrap() {
+        if poll(Duration::from_millis(delay))?
+                && let Event::Key(event) = read()? {
             match event.code {
                 KeyCode::Char('q') => break,
                 KeyCode::Char('w') if sym != 'v' => (sym, v) = ('^', ( 0,-1)),
@@ -73,8 +79,8 @@ fn main() {
                 // LOSE CONDITIONS //
         
         if let Some((hx, hy)) = deque.pop_back() {
-            if hx <= 1 || hx >= w as i16 - 2
-                    || hy <= 1 || hy >= h as i16 - 2
+            if hx <= 0 || hx >= w as i16 - 1
+                    || hy <= 0 || hy >= h as i16 - 1
                     || deque.contains(&(hx, hy)) {
                 break;
             }
@@ -90,25 +96,25 @@ fn main() {
                 apple = (random_range(1..w - 1), random_range(1..h - 1));
                 if !deque.contains(&(apple.0 as i16, apple.1 as i16)) { break }
             }
-            execute!(out, MoveTo(apple.0, apple.1), Print('O')).unwrap();
+            execute!(out, MoveTo(apple.0, apple.1), Print('O'))?;
             delay = ((delay as f32 * 0.90) as u64).max(50);
         }
 
                 // SNAKE MOVEMENT //
         if let Some((x, y)) = deque.pop_front() {
-            execute!(out, MoveTo(x as u16, y as u16), Print(' ')).unwrap();
+            execute!(out, MoveTo(x as u16, y as u16), Print(' '))?;
         }
         if let Some(&(x, y)) = deque.back() {
-            execute!(out, MoveTo(x as u16, y as u16), Print('#')).unwrap();
+            execute!(out, MoveTo(x as u16, y as u16), Print('#'))?;
             let n = ((x + v.0), (y + v.1));
-            execute!(out, MoveTo(n.0 as u16, n.1 as u16), Print(sym)).unwrap();
+            execute!(out, MoveTo(n.0 as u16, n.1 as u16), Print(sym))?;
             deque.push_back(n);
         }
     }
 
             // CLEANUP //
-    execute!(out, LeaveAlternateScreen).unwrap();
-    execute!(out, cursor::Show).unwrap();
-    disable_raw_mode().unwrap();
+    execute!(out, LeaveAlternateScreen)?;
+    execute!(out, cursor::Show)?;
+    disable_raw_mode()?;
+    Ok(())
 }
-
