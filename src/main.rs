@@ -17,6 +17,7 @@ use crossterm::terminal::LeaveAlternateScreen;
 use crossterm::queue;
 use crossterm::execute;
 
+use rand::random_range;
 use crossterm::event::poll;
 use crossterm::terminal::enable_raw_mode;
 use crossterm::terminal::disable_raw_mode;
@@ -28,7 +29,9 @@ fn main() {
     let (w, h) = terminal::size().unwrap();
     let (c_x, c_y) = (w as i16/ 2, h as i16 / 2);
     let mut v: (i16, i16) = (1, 0);
+    let mut apple = (random_range(1..w -1 ), random_range(1..h - 1));
     let mut sym = '>';
+    let mut delay = 200;
 
     enable_raw_mode().unwrap();
     execute!(out, EnterAlternateScreen).unwrap();
@@ -42,18 +45,20 @@ fn main() {
         queue!(out, MoveTo(0, y), Print('+'), MoveTo(w - 1, y), Print('+')).unwrap();
     }
     out.flush().unwrap();
-    
 
         // INIT SNAKE //
     let mut deque: VecDeque<(i16, i16)> = VecDeque::new();
-    for d in 0..30 {
+    for d in 0..3 {
         deque.push_back((c_x + d, c_y));
         execute!(out, MoveTo((c_x + d) as u16, c_y as u16), Print('#')).unwrap();
     }
 
+        // APPLE //
+    execute!(out, MoveTo(apple.0, apple.1), Print('O')).unwrap();
+
     loop {
                 // CONTROLS //
-        if poll(Duration::from_millis(200)).unwrap()
+        if poll(Duration::from_millis(delay)).unwrap()
                 && let Event::Key(event) = read().unwrap() {
             match event.code {
                 KeyCode::Char('q') => break,
@@ -74,6 +79,19 @@ fn main() {
                 break;
             }
             deque.push_back((hx, hy));
+        }
+
+                // EAT APPLE //
+        if let Some(&(hx, hy)) = deque.back()
+                && hx == apple.0 as i16 && hy == apple.1 as i16
+                && let Some(&(x, y)) = deque.front() {
+            deque.push_front((x, y));
+            loop {
+                apple = (random_range(1..w - 1), random_range(1..h - 1));
+                if !deque.contains(&(apple.0 as i16, apple.1 as i16)) { break }
+            }
+            execute!(out, MoveTo(apple.0, apple.1), Print('O')).unwrap();
+            delay = ((delay as f32 * 0.90) as u64).max(50);
         }
 
                 // SNAKE MOVEMENT //
