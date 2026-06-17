@@ -3,7 +3,7 @@
 
 Want to make the shortest and the simples possible implementations of the Snake game (not necessarily the same solution for both)
 
-We should not use ofuscation to make everything 'look' smaller (no single letter identifiers, or cramming everything in a single line)
+We should not use ofuscation to make everything 'look' smaller, or cramming everything in a single line.
 
 It should be intelligible, but tricks are allowed.
 
