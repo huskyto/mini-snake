@@ -14,16 +14,21 @@ intelligible. Clever tricks are fair game, golfing for its own sake is not.
 
 ## Running
 
+Pick which version to run with an argument:
+
 ```sh
-cargo run
+cargo run -- std   # standard (readable) implementation
+cargo run -- min   # minimal implementation
 ```
 
-By default `main.rs` runs both versions back to back. Comment out whichever you
-don't want in [src/main.rs](src/main.rs):
+If you run without an argument, you'll be prompted to choose:
 
-```rust
-let _ = min_snake::min_snake();
-let _ = standard_snake::standard_snake();
+```sh
+cargo run
+# What option do you want to run?
+# 0 - Minimal
+# 1 - Standard
+# >
 ```
 
 The board fills your terminal window, so resize it before launching.
